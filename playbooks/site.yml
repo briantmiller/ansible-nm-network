@@ -1,0 +1,9 @@
+---
+# ansible-playbook local.nm_network.site -i inventory -e nm_config_file=network.yaml
+- name: Configure NetworkManager connections
+  hosts: "{{ nm_hosts | default('all') }}"
+  gather_facts: false
+  become: true
+  serial: "{{ nm_serial | default(1) }}"
+  roles:
+    - local.nm_network.configure

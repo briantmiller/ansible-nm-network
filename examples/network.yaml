@@ -1,0 +1,59 @@
+# Corrected version of the original example. See the config-format doc.
+bridges:
+  br0:
+    ip4: 1.2.3.4/24
+    stp: true
+    forwarddelay: 20
+    hellotime: 5
+    maxage: 12            # was 8; 802.1D needs maxage >= 2*(hellotime+1)
+    vlans:                # VLANs on the bridge itself (needed for br0.100 below)
+      100: on
+    ports:
+      eno1:
+        settings:
+          hairpin: true
+        vlans:
+          100: on
+          200: on
+          300: off
+      eno2:
+        vlans:
+          100: private    # access port: VLAN 100 untagged, PVID 100
+      bond0:              # defined under bonds; enslaved here, master inferred
+        vlans:
+          100: on
+          200: on
+          300: on
+          400: on
+
+bonds:
+  bond0:
+    mode: 802.3ad
+    miimon: 100
+    downdelay: 10
+    ports:
+      - eno3
+      - eno4
+
+vlans:
+  br0.100:
+    vlandev: br0
+    vlanid: 100
+    method4: disabled     # no address; otherwise NetworkManager tries DHCP
+    method6: disabled
+  vlan50:
+    vlandev: eno5
+    vlanid: 50            # was "vlandid"
+    ip4: 5.6.7.8/24
+
+ethernet:
+  eno6:
+    ip4: 4.3.2.1/24
+    ip6: dead:beef:cafe::2/64
+    gw4: 4.3.2.2
+    routes4_extended:     # routes4 and routes4_extended can't be combined
+      - ip: 3.3.3.0/24
+        next_hop: 4.3.2.3
+      - ip: 10.0.0.0/16
+        next_hop: 4.3.2.3
+        metric: 200

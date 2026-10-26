@@ -1,0 +1,26 @@
+namespace: local
+name: nm_network
+version: 1.0.0
+readme: README.md
+authors:
+  - brun064 <brun064@gmail.com>
+description: Configure NetworkManager bridges, bonds, VLANs and more from one structured YAML file per host.
+license:
+  - GPL-3.0-or-later
+tags: [networking, networkmanager, nmcli, linux]
+dependencies:
+  community.general: ">=10.3.0"
+build_ignore:
+  - "*.tar.gz"
+  - "**/__pycache__"
+  - ".pytest_cache"
+  - .git
+  - .gitignore
+  - .github
+  - .collections
+  - .sanity
+  - dist
+  - scripts
+  - Makefile
+  - requirements-dev.txt
+  - tests/stub

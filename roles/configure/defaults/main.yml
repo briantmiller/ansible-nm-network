@@ -1,0 +1,5 @@
+---
+# Path to the host's network config file. Alternatively define nm_config directly.
+# nm_config_file: host_network/{{ inventory_hostname }}.yaml
+nm_activate: false            # bring changed connections up at the end of the run
+nm_fail_on_warnings: false    # treat validation warnings as errors

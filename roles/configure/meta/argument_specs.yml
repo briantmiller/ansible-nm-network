@@ -1,0 +1,19 @@
+---
+argument_specs:
+  main:
+    short_description: Configure NetworkManager from a structured config file
+    options:
+      nm_config_file:
+        type: path
+        description: Network config file to load. Not needed if nm_config is defined.
+      nm_config:
+        type: dict
+        description: The network config itself, as an alternative to nm_config_file.
+      nm_activate:
+        type: bool
+        default: false
+        description: Run nmcli connection up on connections changed in this run, masters first.
+      nm_fail_on_warnings:
+        type: bool
+        default: false
+        description: Fail the run when validation produces warnings.

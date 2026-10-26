@@ -1,0 +1,7 @@
+dist/
+.collections/
+.sanity/
+.pytest_cache/
+__pycache__/
+*.pyc
+*.tar.gz

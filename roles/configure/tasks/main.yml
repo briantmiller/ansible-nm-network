@@ -1,0 +1,170 @@
+---
+- name: Load network config file
+  ansible.builtin.include_vars:
+    file: "{{ nm_config_file }}"
+    name: nm_config
+  when: nm_config_file is defined
+
+- name: Require a network config
+  ansible.builtin.assert:
+    that: nm_config is defined
+    fail_msg: Set nm_config_file, or define nm_config in inventory.
+    quiet: true
+
+- name: Parse and validate network config
+  ansible.builtin.set_fact:
+    nm_plan: "{{ nm_config | local.nm_network.nm_parse }}"
+
+- name: Show validation warnings
+  ansible.builtin.debug:
+    msg: "{{ nm_plan.warnings }}"
+  when: nm_plan.warnings | length > 0
+
+- name: Stop on validation errors
+  ansible.builtin.fail:
+    msg: "{{ nm_plan.errors }}"
+  when: nm_plan.errors | length > 0
+
+- name: Stop on validation warnings
+  ansible.builtin.fail:
+    msg: "nm_fail_on_warnings is set and validation produced warnings (see above)."
+  when: nm_fail_on_warnings | bool and nm_plan.warnings | length > 0
+
+- name: Show planned connections
+  ansible.builtin.debug:
+    msg: "{{ item.state }} {{ item.type }} {{ item.conn_name }} ({{ item.ifname }})"
+    verbosity: 1
+  loop: "{{ nm_plan.connections }}"
+  loop_control:
+    label: "{{ item.conn_name }}"
+
+- name: Remove absent connections (ports first)
+  community.general.nmcli:
+    conn_name: "{{ item.conn_name }}"
+    state: absent
+  loop: "{{ nm_plan.connections | selectattr('state', 'eq', 'absent') | reverse | list }}"
+  loop_control:
+    label: "{{ item.conn_name }}"
+
+- name: Create or update connections
+  community.general.nmcli:
+    conn_name: "{{ item.conn_name }}"
+    ifname: "{{ item.ifname }}"
+    type: "{{ item.type }}"
+    state: present
+    addr_gen_mode6: "{{ item.params.addr_gen_mode6 | default(omit) }}"
+    ageingtime: "{{ item.params.ageingtime | default(omit) }}"
+    arp_interval: "{{ item.params.arp_interval | default(omit) }}"
+    arp_ip_target: "{{ item.params.arp_ip_target | default(omit) }}"
+    autoconnect: "{{ item.params.autoconnect | default(omit) }}"
+    autoconnect_priority: "{{ item.params.autoconnect_priority | default(omit) }}"
+    autoconnect_retries: "{{ item.params.autoconnect_retries | default(omit) }}"
+    bond_mode_behavior: "{{ item.params.bond_mode_behavior | default(omit) }}"
+    conn_reload: "{{ item.params.conn_reload | default(omit) }}"
+    dhcp_client_id: "{{ item.params.dhcp_client_id | default(omit) }}"
+    dns4: "{{ item.params.dns4 | default(omit) }}"
+    dns4_ignore_auto: "{{ item.params.dns4_ignore_auto | default(omit) }}"
+    dns4_options: "{{ item.params.dns4_options | default(omit) }}"
+    dns4_search: "{{ item.params.dns4_search | default(omit) }}"
+    dns6: "{{ item.params.dns6 | default(omit) }}"
+    dns6_ignore_auto: "{{ item.params.dns6_ignore_auto | default(omit) }}"
+    dns6_options: "{{ item.params.dns6_options | default(omit) }}"
+    dns6_search: "{{ item.params.dns6_search | default(omit) }}"
+    downdelay: "{{ item.params.downdelay | default(omit) }}"
+    egress: "{{ item.params.egress | default(omit) }}"
+    fail_over_mac: "{{ item.params.fail_over_mac | default(omit) }}"
+    flags: "{{ item.params.flags | default(omit) }}"
+    forwarddelay: "{{ item.params.forwarddelay | default(omit) }}"
+    gsm: "{{ item.params.gsm | default(omit) }}"
+    gw4: "{{ item.params.gw4 | default(omit) }}"
+    gw4_ignore_auto: "{{ item.params.gw4_ignore_auto | default(omit) }}"
+    gw6: "{{ item.params.gw6 | default(omit) }}"
+    gw6_ignore_auto: "{{ item.params.gw6_ignore_auto | default(omit) }}"
+    hellotime: "{{ item.params.hellotime | default(omit) }}"
+    ignore_unsupported_suboptions: "{{ item.params.ignore_unsupported_suboptions | default(omit) }}"
+    infiniband_mac: "{{ item.params.infiniband_mac | default(omit) }}"
+    ingress: "{{ item.params.ingress | default(omit) }}"
+    ip4: "{{ item.params.ip4 | default(omit) }}"
+    ip6: "{{ item.params.ip6 | default(omit) }}"
+    ip_privacy6: "{{ item.params.ip_privacy6 | default(omit) }}"
+    ip_tunnel_dev: "{{ item.params.ip_tunnel_dev | default(omit) }}"
+    ip_tunnel_input_key: "{{ item.params.ip_tunnel_input_key | default(omit) }}"
+    ip_tunnel_local: "{{ item.params.ip_tunnel_local | default(omit) }}"
+    ip_tunnel_output_key: "{{ item.params.ip_tunnel_output_key | default(omit) }}"
+    ip_tunnel_remote: "{{ item.params.ip_tunnel_remote | default(omit) }}"
+    mac: "{{ item.params.mac | default(omit) }}"
+    macvlan: "{{ item.params.macvlan | default(omit) }}"
+    master: "{{ item.params.master | default(omit) }}"
+    maxage: "{{ item.params.maxage | default(omit) }}"
+    may_fail4: "{{ item.params.may_fail4 | default(omit) }}"
+    method4: "{{ item.params.method4 | default(omit) }}"
+    method6: "{{ item.params.method6 | default(omit) }}"
+    miimon: "{{ item.params.miimon | default(omit) }}"
+    mode: "{{ item.params.mode | default(omit) }}"
+    mtu: "{{ item.params.mtu | default(omit) }}"
+    never_default4: "{{ item.params.never_default4 | default(omit) }}"
+    primary: "{{ item.params.primary | default(omit) }}"
+    priority: "{{ item.params.priority | default(omit) }}"
+    route_metric4: "{{ item.params.route_metric4 | default(omit) }}"
+    route_metric6: "{{ item.params.route_metric6 | default(omit) }}"
+    route_table4: "{{ item.params.route_table4 | default(omit) }}"
+    route_table6: "{{ item.params.route_table6 | default(omit) }}"
+    routes4: "{{ item.params.routes4 | default(omit) }}"
+    routes4_extended: "{{ item.params.routes4_extended | default(omit) }}"
+    routes6: "{{ item.params.routes6 | default(omit) }}"
+    routes6_extended: "{{ item.params.routes6_extended | default(omit) }}"
+    routing_rules4: "{{ item.params.routing_rules4 | default(omit) }}"
+    routing_rules6: "{{ item.params.routing_rules6 | default(omit) }}"
+    runner: "{{ item.params.runner | default(omit) }}"
+    runner_fast_rate: "{{ item.params.runner_fast_rate | default(omit) }}"
+    runner_hwaddr_policy: "{{ item.params.runner_hwaddr_policy | default(omit) }}"
+    slave_type: "{{ item.params.slave_type | default(omit) }}"
+    sriov: "{{ item.params.sriov | default(omit) }}"
+    ssid: "{{ item.params.ssid | default(omit) }}"
+    stp: "{{ item.params.stp | default(omit) }}"
+    table: "{{ item.params.table | default(omit) }}"
+    transport_mode: "{{ item.params.transport_mode | default(omit) }}"
+    updelay: "{{ item.params.updelay | default(omit) }}"
+    vlandev: "{{ item.params.vlandev | default(omit) }}"
+    vlanid: "{{ item.params.vlanid | default(omit) }}"
+    vpn: "{{ item.params.vpn | default(omit) }}"
+    vxlan_id: "{{ item.params.vxlan_id | default(omit) }}"
+    vxlan_local: "{{ item.params.vxlan_local | default(omit) }}"
+    vxlan_parent: "{{ item.params.vxlan_parent | default(omit) }}"
+    vxlan_remote: "{{ item.params.vxlan_remote | default(omit) }}"
+    wifi: "{{ item.params.wifi | default(omit) }}"
+    wifi_sec: "{{ item.params.wifi_sec | default(omit) }}"
+    wireguard: "{{ item.params.wireguard | default(omit) }}"
+    xmit_hash_policy: "{{ item.params.xmit_hash_policy | default(omit) }}"
+    zone: "{{ item.params.zone | default(omit) }}"
+  loop: "{{ nm_plan.connections | selectattr('state', 'eq', 'present') | list }}"
+  loop_control:
+    label: "{{ item.type }} {{ item.conn_name }}"
+  register: nm_result
+
+- name: Set properties the nmcli module does not cover (VLAN filtering, port VLANs, port settings)
+  local.nm_network.nm_conn_props:
+    conn_name: "{{ item.conn_name }}"
+    properties: "{{ item.props }}"
+  loop: "{{ nm_plan.connections | selectattr('state', 'eq', 'present') | selectattr('props') | list }}"
+  loop_control:
+    label: "{{ item.conn_name }}: {{ item.props.keys() | join(', ') }}"
+  register: nm_props_result
+
+- name: Collect connections changed in this run
+  ansible.builtin.set_fact:
+    nm_changed: >-
+      {{ (nm_result.results | default([]) | selectattr('changed') | map(attribute='item.conn_name') | list)
+         + (nm_props_result.results | default([]) | selectattr('changed') | map(attribute='item.conn_name') | list) }}
+
+- name: Activate changed connections (masters first)
+  ansible.builtin.command:
+    argv: [nmcli, connection, up, "{{ item.conn_name }}"]
+  loop: >-
+    {{ nm_plan.connections | selectattr('state', 'eq', 'present')
+       | selectattr('conn_name', 'in', nm_changed)
+       | rejectattr('params.autoconnect', 'false') | list }}
+  loop_control:
+    label: "{{ item.conn_name }}"
+  when: nm_activate | bool
+  changed_when: true
