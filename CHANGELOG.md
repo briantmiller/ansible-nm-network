@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- RPM packaging for RHEL 10: spec in `rpm/`, `make rpm`, `make rpm-container`, `make rpmlint`.
+- `make version` also updates the RPM spec version and changelog.
+- LICENSE now contains the full GPL-3.0 text.
+
 ## 1.0.0 (2026-10-26)
 
 First release.

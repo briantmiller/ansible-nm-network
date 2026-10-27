@@ -24,3 +24,8 @@ build_ignore:
   - Makefile
   - requirements-dev.txt
   - tests/stub
+  - rpm
+  - rpmbuild
+  - build
+  - requirements.yml
+  - .ansible

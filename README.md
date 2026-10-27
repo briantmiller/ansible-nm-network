@@ -64,7 +64,7 @@ Requires Python 3.10+ and GNU make.
     make build       # tests, then dist/local-nm_network-<version>.tar.gz
     make install     # build and install for the current user
 
-Other targets: `make version V=1.1.0` sets the version, and `make namespace NS=myorg`
+Other targets: `make version V=1.1.0` sets the version (galaxy.yml and RPM spec), and `make namespace NS=myorg`
 renames the namespace everywhere. `local` is a placeholder; publishing to Galaxy or
 Automation Hub needs a namespace you own.
 
@@ -74,6 +74,49 @@ existing collections path instead of `.collections/`.
 CI (`.github/workflows/ci.yml`) runs test, sanity, dryrun and build on ansible-core 2.16
 and 2.18. Pushing a `v*` tag also attaches the tarball to a GitHub release; Galaxy
 publishing is stubbed in the workflow, ready for a `GALAXY_API_KEY` secret.
+
+## RPM for RHEL 10
+
+The `rpm/` directory has a spec that packages the collection as
+`ansible-collection-local-nm-network`, installed to
+`/usr/share/ansible/collections`, which ansible-core searches by default.
+
+Build on a RHEL 10 (or AlmaLinux/Rocky 10) host:
+
+    sudo dnf install rpm-build ansible-core
+    make rpm                # tests, then dist/rpm/*.el10.noarch.rpm and *.src.rpm
+    make rpmlint            # optional: needs rpmlint (EPEL)
+
+Or build in an EL10 container from any machine with podman or docker:
+
+    make rpm-container                          # default image: almalinux:10
+    RPM_BUILD_IMAGE=<el10 image> make rpm-container
+
+Pass rpmbuild options with `RPMBUILD_ARGS`, e.g. `make rpm RPMBUILD_ARGS="--without tests"`.
+
+| Build option | Effect |
+| --- | --- |
+| `--without community_general_rpm` | No RPM dependency on community.general; use when it comes from Galaxy or Automation Hub instead of EPEL |
+| `--without tests` | Skip the parser tests in `%check` |
+
+Install on the target:
+
+    sudo dnf install ./ansible-collection-local-nm-network-1.0.0-1.el10.noarch.rpm
+
+The package requires ansible-core (RHEL 10 AppStream), NetworkManager, and
+`ansible-collection-community-general` from EPEL 10, unless it was built
+`--without community_general_rpm`. To enable EPEL on RHEL 10, enable the
+CodeReady Builder repo and install `epel-release`, following the EPEL docs.
+
+The RPM asks for community.general 10.0.0 or later, not the 10.3.0 in
+galaxy.yml, because EPEL 10 first shipped 10.0.1. Newer module options, such
+as `fail_over_mac` (10.3.0), only work with a community.general that has them;
+the role passes an option to the module only when your config sets it.
+
+`make version` and `make namespace` update the spec along with galaxy.yml.
+`make namespace` also renames the spec, and `scripts/build-rpm.sh` refuses to
+build if the spec and galaxy.yml disagree. Set `%global project_url` in the
+spec to where the repository is hosted.
 
 ## Layout
 
@@ -86,4 +129,5 @@ publishing is stubbed in the workflow, ready for a `GALAXY_API_KEY` secret.
     docs/config-format.md         config file reference
     tests/unit/                   parser tests
     tests/stub/nmcli              fake nmcli for dry runs (not shipped)
-    scripts/                      build, sanity, dryrun, set-namespace (not shipped)
+    rpm/                          RPM spec and rpmlint filters (not shipped)
+    scripts/                      build, RPM build, sanity, dryrun, version and namespace (not shipped)

@@ -1,0 +1,19 @@
+# rpmlint filters for this package. Use with: make rpmlint
+# Source0 is a tarball made by scripts/build-rpm.sh, not a download.
+addFilter("invalid-url Source0")
+# The collection keeps its own README, LICENSE and docs inside its directory;
+# the %doc and %license copies are the standard places to find them.
+addFilter("files-duplicate")
+# Older rpmlint license lists predate SPDX identifiers; Fedora/EL accept it.
+addFilter("invalid-license GPL-3.0-or-later")
+# Ansible reads module files and sends them to the target; they are never run
+# in place, so collection modules are installed 0644 like in other collections.
+addFilter("non-executable-script .*/plugins/modules/")
+# Local builds are unsigned; sign with rpmsign before publishing to a repo.
+addFilter("no-signature")
+# Tags that Fedora/EL policy no longer uses (Debian's rpmlint defaults still check them).
+addFilter("no-packager-tag")
+addFilter("no-group-tag")
+addFilter("no-buildroot-tag")
+# Changelog entries omit the %{?dist} suffix (.el10), as Fedora/EL policy asks.
+addFilter("incoherent-version-in-changelog")
